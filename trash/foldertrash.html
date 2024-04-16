@@ -1,0 +1,57 @@
+{% extends 'bbody.html' %}
+{% block content %}
+
+    {% for message in get_flashed_messages() %}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>{{ message }}</strong> 
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+    {% endfor %}
+
+    {% if user %}
+    <h1>Create New Folder:</h1>
+    <form method="POST" action="{{ url_for('folder', id=id) }}">
+
+        {{ form.hidden_tag() }}
+        {{ form.name.label }}
+        {{ form.name(class_="form-control", placeholder="Folder Name") }}
+        <br/>
+        {{ form.submit(class_="btn btn-info") }}
+    </form>
+        <br/><h1>or</h1><br/>
+        
+        <h1>Choose Existing Folder:</h1>    
+        <form method="POST" action="{{ url_for('save_existing_folder', id=id) }}" enctype="multipart/form-data">
+            {{ form.csrf_token }}
+            {{ form.folder_upload(class_="form-control-file", webkitdirectory="true") }}
+            <br><br>
+            
+            {{ form.submit(class_="btn btn-info") }}
+            <br><br>
+
+        </form>
+        
+        
+               
+        
+        <br/><br/>
+        
+        <h1>FOLDER LIST:</h1>
+        <br/>
+        <table class="table table-hover table-bordered table-striped">
+            {% for our in user %}
+            <tr>
+                <td>
+                    <i class="fas fa-folder fa-2x"></i>
+                    <a href="{{ url_for('file', id=our.id) }}" class="btn">{{ our.name }}</a><br/>
+                    <a href="{{ url_for('updatefold', id=our.id) }}" class="btn btn-outline-warning">update</a><br/><br>
+                    <a href="{{ url_for('deletefold', id=our.id) }}" class="btn btn-outline-danger">delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    
+    {% endif %}
+    
+    
+{% endblock %}

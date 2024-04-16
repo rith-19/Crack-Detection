@@ -1,0 +1,125 @@
+{% extends 'bbody.html' %}
+{% block content %}
+<style>
+.open-button    
+    {
+    padding: 8px;  
+    background-color: #d9610b; 
+    color: #fff; 
+    border: none; 
+    border-radius: 5px; 
+    cursor: pointer;}
+</style>
+<table class="table table-hover table-bordered table-striped">
+    <thead>
+        <tr>
+            <th><center><h1><b>Upload Files<b><h1></center></th>
+        </tr>
+    </thead>
+</table><center>
+<form method="POST" action="" enctype="multipart/form-data">
+    <div class="table-responsive">
+        <label for="Upload">Select Folder:</label>
+        <input type='text' name='name'>
+        <input type="file" id="Upload" name="imagefile">
+        <button class=" addbtn" type="submit">
+            <div class="sign ">
+              <img src="/static/images/plus.svg" alt="Icon">
+            </div>
+            <div class="text ">Add</div>
+        </button>
+    </div>
+</form>
+</center>
+<br><br>
+<table class="table table-hover table-bordered table-striped">
+    <thead>
+        <tr>
+            <th><center><h1><b>Files list</b><h1></center></th>
+        </tr>
+    </thead>
+</table>
+{% if uploads %}
+<table class="table table-hover table-bordered table-striped">
+    <thead>
+        <tr>
+            <th><center><h4>Image</h4></center></th>
+            <th><center><h4>Actions</h4></center></th>
+        </tr>
+    </thead>
+    <tbody>
+        {% for upload in uploads %}
+        <tr>
+            <td>
+                <b>File Name:</b> {{ upload.name }}<br>
+                <b>Uploaded on:</b> {{ upload.date_added.strftime("%Y-%m-%d %H:%M:%S") }}<br>
+            </td>
+            <td>
+                <center>
+                    <button class="open-button" data-image="{{ upload.image_url }}">Open</button>
+                    <a href="{{ url_for('deletefile', folder_id=id, id=upload.id) }}" class="btn btn-outline-danger">Delete</a>
+                    <form method="POST" action="{{ url_for('process', id=upload.id) }}" style="display: inline;">
+                    <input type="hidden" name="id" value="{{ upload.id }}">
+                    <input type="hidden" name="image_file_path" value="{{ upload.text_filename }}">
+                    <button type="submit" class="btn btn-primary" >Process</button></center>
+                </form>
+            </td>
+        </tr>
+        {% endfor %}
+    </tbody>
+</table><br><br>
+<center><button type="button" class="btn btn-success" id="generateAllButton">Generate All Files</button></center><br>
+{% else %}
+<h1>No files uploaded yet.</h1>
+{% endif %}
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const generateAllButton = document.getElementById("generateAllButton");
+        const folderId = {{ id }};  
+        
+        generateAllButton.addEventListener("click", function () {
+            const formData = new FormData();
+            formData.append("folder_id", folderId);
+            console.error("Ert15");
+            // AJAX request to trigger file generation 
+            fetch(`/generate_all`, {
+                method: "POST",
+                body: formData,
+            })  
+            
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    location.reload();
+                } else {
+                    // Handle error
+                }
+            })
+            .catch(error => {
+                console.error("Error:", error);
+            });
+        });
+
+        document.querySelectorAll('.open-button').forEach(button => {
+            button.addEventListener('click', function() {
+                const imageUrl = this.getAttribute('data-image');
+                console.log("Image URL:", imageUrl); 
+                const popupWindow = window.open(imageUrl, '_blank', 'toolbar=yes,scrollbars=yes,resizable=yes,top=100,left=100,width=600,height=600');
+                if (popupWindow) {
+                    if (window.focus) {
+                        popupWindow.focus();
+                    }
+                } else {
+                    console.error("Failed to open pop-up window.");
+                }
+            });
+        });
+    });
+</script>
+<style>
+    .addbtn{
+        border:none;
+    }
+</style>
+{% endblock %}

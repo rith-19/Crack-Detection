@@ -1,0 +1,59 @@
+{% extends 'bbody.html' %}
+{% block content %}
+
+<table class="table table-hover table-bordered table-striped">
+    <thead>
+        <tr>
+            <th><center><h1><b>Create New Folder<b><h1></center></th>
+        </tr>
+    </thead>
+</table>
+    {% if user %}
+    <center>
+    <form method="POST" action="{{ url_for('folder', id=id) }}">    
+
+        {{ form.hidden_tag() }}
+        {{ form.name.label }}
+        {{ form.name(class_="form-control", placeholder="Enter Folder Name") }}
+        <br/>
+        {{ form.submit(class_="btn btn-info") }}
+    </form>
+    </center><br>
+    <table class="table table-hover table-bordered table-striped">
+        <thead>
+            <tr>
+                <th><center><h1><b>Choose Existing Folder:<b><h1></center></th>
+            </tr>
+        </thead>
+    </table>
+    <center>
+        <form method="POST" action="{{ url_for('save_existing_folder', id=id) }}" enctype="multipart/form-data">
+            {{ form.csrf_token }}
+            {{ form.folder_upload(class_="form-control-file", webkitdirectory="true") }}
+            <br><br>
+            {{ form.submit(class_="btn btn-info") }}
+            <br><br>
+        </form>
+    </center><br>
+        <table class="table table-hover table-bordered table-striped">
+            <thead>
+                <tr>
+                    <th><center><h1><b>Folder List</b></h1></center></th>
+                </tr>
+            </thead>
+            {% for our in user %}
+            <tr>
+                <td>
+                    <i class="fas fa-folder fa-2x"></i>
+                    <a href="{{ url_for('file', id=our.id) }}" class="btn">{{ our.name }}</a><br/>
+                    <a href="{{ url_for('updatefold', id=our.id) }}" class="btn btn-outline-warning">update</a>
+                    <a href="{{ url_for('deletefold', id=our.id) }}" class="btn btn-outline-danger">delete</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </table>
+    
+    {% endif %}
+    
+    
+{% endblock %}

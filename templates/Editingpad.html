@@ -1,0 +1,344 @@
+{% extends 'bbody.html' %}
+{% block content %}
+<html>
+    <head>
+        <title>NEVAR Systems</title>
+        <style>
+          
+        #canvas {
+            border: 5px solid black;
+            cursor: default;
+            position:relative;
+            top:50%;
+            left:50%;
+            transform:translate(-50%,25%);
+            width:50%;
+            height:50%;
+            box-shadow: 0 0px 50px black;
+            border-radius: 10px;
+        }
+            
+            .taskbar {
+                position: fixed;
+                top: 50%;
+                right: 0;
+                transform: translateY(-50%);
+                display: flex;
+                flex-direction: column;
+                justify-content: flex-end;
+                align-items: flex-end;
+                padding: 10px;
+                z-index: 1;
+                background-color:black;
+                border-radius: 1.2rem;
+                backdrop-filter: blur(5px);
+                box-shadow: 0 4px 30px black;
+                border: 3px solid white;
+            }
+            button{
+              border-radius: 1.2rem;
+              box-shadow: 0 0px 20px white;
+              background-color: #09fbd3;
+            }
+            .custom-dialog {
+              position: fixed;
+              top: 50%;
+              left: 50%;
+              transform: translate(-50%, -50%);
+              background-color: rgba(255,255,255,.5);
+              padding: 20px;
+              border-radius: 10px;
+              box-shadow: 0 2px 5px rgba(240,190, 0, 1);
+            }
+            
+            .dialog-content {
+              display: flex;
+              align-items: center;
+              gap: 10px;
+            }
+            
+            .dialog-content label {
+              font-weight: bold;
+            }
+            
+            .dialog-content input[type="text"] {
+              padding: 5px;
+              border: 1px solid #ccc;
+              border-radius: 3px;
+            }
+            
+            .dialog-content button {
+              padding: 5px 10px;
+              background-color: #007bff;
+              color: #fff;
+              border: none;
+              border-radius: 3px;
+              cursor: pointer;
+            }
+            
+            .dialog-content button:hover {
+              background-color: #0056b3;
+            }
+            
+            
+        </style>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    </head>
+    <body>
+      <div class="taskbar">
+        <button class="draw-button" onclick="toggleDrawing()"><i class="fas fa-pencil-alt"></i></button><br>
+        <button onclick="  saveBoundingBoxes(currentBox); savePolygonPoints(polygonPoints);"><i class="fas fa-save"></i></button><br>
+        <button onclick="resetCanvas()"><i class="fas fa-undo"></i></button><br>
+        <button onclick="goBackAndRefresh()"><i class="fas  fa-arrow-left"></i></button><br>
+        <button class="polybt" onclick="activateSmartPolygon()"><i class="fas fa-draw-polygon"></i></button><br> <!-- New button for smart polygon tool -->
+        <button onclick="performSegmentAnything()"><i class="fas fa-magic"></i></button><br>
+      </div>
+      <canvas id="canvas"></canvas>
+      <script src="/static/javascript/draw.js"></script>
+      <script src="/static/javascript/dialogbox.js"></script>
+      <script src="/static/javascript/polygon.js"></script>
+      <script>
+ //*********************************************************************************************************************             
+  var drawingPolygon = false;
+  var polygonPoints = [];
+//*****************************************************************************************************************
+          var canvas = document.getElementById('canvas');
+          var ctx = canvas.getContext('2d');
+          var image_data = "{{ image_data }}";  // image data
+          var bounding_boxes = {{ bounding_boxes | tojson }};  // bounding boxes data
+          var id = "{{ id }}";
+          var isDragging = false;
+          var isResizing = false;
+          var selectedBox = null;
+          var selectedHandle = null;
+          var offset = { x: 0, y: 0 };
+          var drawingEnabled = false;
+          var currentBox = null;
+          var nextId = bounding_boxes.length + 1;
+          var image = new Image();
+          var isResizingEnabled = false;
+          var style = document.createElement('style');
+          style.innerHTML = `.resize-handle {background-color: yellow;}`;
+          document.head.appendChild(style);
+          //insert image
+          image.src = 'data:image/jpeg;base64,' + image_data;
+          image.onload = function() {
+            canvas.width = image.width;
+            canvas.height = image.height;
+            ctx.drawImage(image, 0, 0);
+            drawBoundingBoxes();
+
+            canvas.addEventListener('mousedown', handleMouseDown);
+            canvas.addEventListener('mousemove', handleMouseMove);
+            canvas.addEventListener('mouseup', handleMouseUp);
+          };  
+          //reset
+          function resetCanvas() {
+            bounding_boxes = [];
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(image, 0, 0);
+          }
+
+          //box building
+          function drawBoundingBoxes() {
+              var resizeHandlesSize = 5; 
+              var resizeHandleOffset = resizeHandlesSize / 2; 
+            
+              ctx.clearRect(0, 0, canvas.width, canvas.height);
+              ctx.drawImage(image, 0, 0);
+            
+              for (var i = 0; i < bounding_boxes.length; i++) {
+                var bbox = bounding_boxes[i];
+                ctx.strokeStyle = 'red';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(bbox.x, bbox.y, bbox.width, bbox.height);
+                ctx.fillStyle = 'white';
+                ctx.fillRect(bbox.x - resizeHandleOffset, bbox.y - resizeHandleOffset, resizeHandlesSize, resizeHandlesSize); // Top-left corner
+                ctx.fillRect(bbox.x + bbox.width / 2 - resizeHandleOffset, bbox.y - resizeHandleOffset, resizeHandlesSize, resizeHandlesSize); // Top-center handle
+                ctx.fillRect(bbox.x + bbox.width - resizeHandleOffset, bbox.y - resizeHandleOffset, resizeHandlesSize, resizeHandlesSize); // Top-right corner
+                ctx.fillRect(bbox.x - resizeHandleOffset, bbox.y + bbox.height / 2 - resizeHandleOffset, resizeHandlesSize, resizeHandlesSize); // Middle-left handle
+                ctx.fillRect(bbox.x + bbox.width - resizeHandleOffset, bbox.y + bbox.height / 2 - resizeHandleOffset, resizeHandlesSize, resizeHandlesSize); // Middle-right handle
+                ctx.fillRect(bbox.x - resizeHandleOffset, bbox.y + bbox.height - resizeHandleOffset, resizeHandlesSize, resizeHandlesSize); // Bottom-left corner
+                ctx.fillRect(bbox.x + bbox.width / 2 - resizeHandleOffset, bbox.y + bbox.height - resizeHandleOffset, resizeHandlesSize, resizeHandlesSize); // Bottom-center handle
+                ctx.fillRect(bbox.x + bbox.width - resizeHandleOffset, bbox.y + bbox.height - resizeHandleOffset, resizeHandlesSize, resizeHandlesSize); // Bottom-right corner
+
+                ctx.font = '12px Arial';
+                ctx.fillStyle = 'red';
+                ctx.fillText('Name:' + bbox.id, bbox.x, bbox.y - 5);
+              }
+            }
+            
+
+            function startDrawing(event) {
+              var { x, y } = getCanvasCoordinates(event);
+          
+              // Check if the click is inside any existing bounding box
+              for (var i = bounding_boxes.length - 1; i >= 0; i--) {
+                  var bbox = bounding_boxes[i];
+                  if (
+                      x >= bbox.x &&
+                      x <= bbox.x + bbox.width &&
+                      y >= bbox.y &&
+                      y <= bbox.y + bbox.height
+                  ) {
+                      return; // Don't start drawing if clicked inside an existing box
+                  }
+              }
+              
+              var newBox = {
+                  id: "",
+                  x: x,
+                  y: y,
+                  width: 0,
+                  height: 0
+              };
+          
+              bounding_boxes.push(newBox);
+              currentBox = newBox;
+          
+              canvas.addEventListener('mousemove', drawNewBoundingBox);
+              canvas.addEventListener('mouseup', finishDrawing);
+          }
+
+
+          function getCanvasCoordinates(event) {
+            var canvasRect = canvas.getBoundingClientRect();
+            var offsetX = canvasRect.left;
+            var offsetY = canvasRect.top;
+            return {
+                x: (event.clientX - offsetX) * (canvas.width / canvas.offsetWidth),
+                y: (event.clientY - offsetY) * (canvas.height / canvas.offsetHeight)
+            };
+          }
+
+          function drawNewBoundingBox(event) {
+            if (!currentBox) return;
+        
+            var { x, y } = getCanvasCoordinates(event);
+        
+            // Calculate width and height based on the initial mouse position
+            currentBox.width = x - currentBox.x;
+            currentBox.height = y - currentBox.y;
+        
+            drawBoundingBoxes(); // Redraw all bounding boxes
+        }
+        
+          
+
+          
+        function finishDrawing() {
+          canvas.removeEventListener('mousemove', drawNewBoundingBox);
+          canvas.removeEventListener('mouseup', finishDrawing);
+      
+          if (currentBox) {
+              var newBox = currentBox;
+              currentBox = null;
+      
+              // Do something with the new box, e.g., display a dialog to enter box details
+              showCustomDialog(newBox);
+          }
+      }
+
+
+
+          
+          
+          // send to backend
+          function saveBoundingBoxes() {
+            const url = `/saveboundingboxes/${id}`; 
+            console.log("Present")
+            const data = bounding_boxes.map((bbox) => {
+              return {
+                x:bbox.x,
+                y:bbox.y,
+                width:bbox.width,
+                height:bbox.height,
+                id:bbox.id,
+              };
+            });
+          
+            console.log('values', data);
+            const requestData = JSON.stringify({ bounding_boxes: data });
+
+            fetch(url, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({ bounding_boxes: data }), 
+            })
+              .then((response) => response.json())
+              .then((responseData) => {
+                console.log(responseData);
+              })
+              .catch((error) => {
+                console.error('Error:', error);
+              });
+          }
+//********************************************************************************************************************
+// send to backend
+
+//***********************************************************************************************************
+          function goBackAndRefresh() {
+            window.history.back();
+        }
+        
+        // back or forward in the browser's history
+        window.addEventListener('popstate', function(event) {
+            
+            if (event.state && event.state.refreshPage) {
+                location.reload();
+            }
+        });
+
+          canvas.addEventListener('mousedown', handleMouseDown);
+          canvas.addEventListener('mousemove', handleMouseMove);
+          canvas.addEventListener('mouseup', handleMouseUp);
+          var uploadId={{id}};
+          
+          function savePolygonPoints(polygonPoints) {
+            const url = '/savepolygon'; // Update the URL to match your backend endpoint
+            console.log("url",url);
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ polygonPoints: polygonPoints,id:uploadId }),
+            })
+            .then((response) => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then((data) => {
+                console.log(data.message); // Log the response message from the server
+            })
+            .catch((error) => {
+                console.error('Error:', error);
+            });
+        }
+        
+  function performSegmentAnything() {
+            // Send AJAX request to execute Python script
+            var xhr = new XMLHttpRequest();
+            xhr.open("GET", "/runPythonScript", true);
+            xhr.onreadystatechange = function() {
+                if (xhr.readyState == 4) {
+                    if (xhr.status == 200) {
+                        console.log(xhr.responseText);
+                        // Do something with the response if needed
+                    } else {
+                        console.error(xhr.responseText);
+                    }
+                }
+            };
+            xhr.send();
+        }
+
+        
+      </script>
+    </body>
+</html>
+{% endblock %}

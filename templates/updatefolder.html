@@ -1,0 +1,37 @@
+{% extends 'bbody.html' %}
+{% block content %}
+    {% for message in get_flashed_messages()%}
+    <div class="alert alert-success alert-dismissible fade show" role="alert">
+        <strong>{{message}}</strong> 
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+      </div>
+    
+    {%endfor%}
+    {%if name %}
+        <h1>update:</h1><br/>
+        <table class="table table-hover table-bordered table-striped">
+            {% for our in user%}
+                <tr>
+                <td> <i class="fas fa-folder"></i>{{our.id}}.<a class="btn" href="{{url_for('updatefold',id=our.id)}}">{{our.name}}</a></td>
+                </tr>
+            {%endfor%}
+        </table>
+    {%else%}
+        <h1>update user:</h1>
+        <br/>
+        <div class="shadow p-3 mb-5 bg-body rounded">
+
+        
+        <form action="/updatefold/{{foldertoupdate.id}}" method="POST">
+            {{form.hidden_tag()}}
+            {{form.name.label()}}
+            {{form.name(class="form-control",value=foldertoupdate.name)}}
+            <br/>
+            
+            {{form.submit(class="btn btn-warning")}}
+            <a href="{{url_for('deletefold',id=id)}}"class="btn btn-danger">Delete folder</a>
+        </form></div><br/><br/>
+        
+    {% endif %}
+{% endblock %}
+ 
