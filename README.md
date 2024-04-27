@@ -12,7 +12,7 @@ This project aims to revolutionize industrial inspection through drone-based cra
 - **Improving Safety and Efficiency**: This innovative approach promises to significantly improve safety, efficiency, and maintenance practices in various industrial sectors.
 
 ## Getting Started
-![s](https://github.com/blessingstonsk/Crack-Detection-tool/assets/110443619/416ade75-3f60-4836-9111-94b745118926)
+
 
 To get started with this project, follow these steps:
 
