@@ -16,7 +16,7 @@ This project aims to revolutionize industrial inspection through drone-based cra
 
 To get started with this project, follow these steps:
 
-1. Clone the repository: `git clone [https://github.com/rith-19/Crack-Detection-tool.git]`
+1. Clone the repository: `git clone https://github.com/rith-19/Crack-Detection-tool.git`
 2. Install dependencies: `pip install -r requirements.txt`
 3. Run the main script: `python main.py`
 
